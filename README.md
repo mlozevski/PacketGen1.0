@@ -10,5 +10,5 @@ The Packet Configuration settings are in the packet_config.yaml file.
 # Generate
 To generate the packet, execute run.py
 ```bash
-$ python3 run.py
+python3 run.py
 ```
