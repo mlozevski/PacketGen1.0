@@ -1,28 +1,25 @@
 # Packet Config
-# Any values not specified will have a default config
+# Any required values not specified will have a default config
 
 # TCP Config
-# Acceptable config options: port_src, port_dst
 TCP:
-  port_dst: 123
-  port_src: 5050
+  dport: 123
+  sport: 5050
 
 # UDP Config
-# Acceptable config options: port_src, port_dst
 #UDP:
-# port_dst: 53
+# dport: 53
 
 # IP Config
-# Acceptable config options: ip_src, ip_dst
 IP:
-  ip_dst: 25.25.25.25
+  dst: 25.25.25.25
 
 # Ether Config
-# Acceptable L2 options: mac_src, mac_dst
 Ether:
-  mac_dst: aa:bb:cc:dd:ee:ff
+  dst: aa:bb:cc:dd:ee:ff
 
 # Settings
 Settings:
-  mode: one-time
-  #More modes coming soon
+  mode: loop
+  #iface_index: 0
+  interval: 3

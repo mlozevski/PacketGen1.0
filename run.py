@@ -4,7 +4,7 @@
     PacketGen1.0 is a packet generator tool that can be used to craft a single pack based off of a yaml file
     Author: Mike Lozevski
 """
-from scapy.all import IP, ICMP, Ether, TCP, UDP, sendp, send
+from scapy.all import IP, ICMP, Ether, TCP, UDP, sendp, send, ifaces
 import sys
 import yaml
 
@@ -12,6 +12,7 @@ packet = None
 L2 = False
 L3 = False
 settings = None
+
 
 def packet_stitcher(packet, new_packet):
     if packet:
@@ -38,29 +39,15 @@ def main():
             config = yaml.safe_load(stream)
             if 'Ether' in config:
                 L2 = True
-                ether_config = config['Ether']
-                if ether_config.get('mac_src') and ether_config.get('mac_dst') is None:
-                    packet = Ether(src=ether_config.get('mac_src'))
-                elif ether_config.get('mac_dst') and ether_config.get('mac_src') is None:
-                    packet = Ether(dst=ether_config.get('mac_dst'))
-                else:
-                    packet = Ether(src=ether_config.get('mac_src'), dst=ether_config.get('mac_dst'))
+                packet = Ether(**config['Ether'])
             if 'IP' in config:
                 L3 = True
-                ip_config = config['IP']
-                if ip_config.get('ip_src') and ip_config.get('ip_dst') is None:
-                    packet = packet_stitcher(packet, IP(src=ip_config.get('ip_src')))
-                elif ip_config.get('ip_dst') and ip_config.get('ip_src') is None:
-                    packet = packet_stitcher(packet, IP(dst=ip_config.get('ip_dst')))
-                else:
-                    packet = packet_stitcher(packet, IP(src=ip_config.get('ip_src'), dst=ip_config.get('ip_dst')))
+                packet = packet_stitcher(packet, IP(**config['IP']))
             if 'IP' in config and ('TCP' in config or 'UDP' in config):
                 if 'TCP' in config:
-                    transport_config = config['TCP']
-                    config_transport_helper(TCP, transport_config)
+                    packet = packet_stitcher(packet, TCP(**config['TCP']))
                 elif 'UDP' in config:
-                    transport_config = config['UDP']
-                    config_transport_helper(UDP, transport_config)
+                    packet = packet_stitcher(packet, UDP(**config['UDP']))
             print("packet created...")
             if 'Settings' in config:
                 settings = config['Settings']
@@ -73,18 +60,28 @@ def main():
 
 
 def send_packet():
-    global packet, L2, L3
-    if L3 and L2:
-        sendp(packet)
-    elif L2 and not L3:
-        sendp(packet)
+    global packet, L2, L3, settings
+    iface = None
+    loop = 0
+    inter = 1
+    if settings.get('mode') == 'loop':
+        loop = 1
+    if settings.get('iface_index'):
+        iface = ifaces.dev_from_index(settings.get('iface_index'))
+    if settings.get('interval'):
+        inter = int(settings.get('interval'))
+    if L2:
+        sendp(packet, iface=iface, loop=loop, inter=inter)
     else:
         send(packet)
 
 
 if __name__ == '__main__':
-    main()
-    if packet and settings:
-        if settings.get('mode') == 'one-time':
+    if len(sys.argv) == 1:
+        main()
+        if packet and settings:
             send_packet()
+    else:
+        if sys.argv[1].lower() == "interfaces":
+            print(ifaces)
 
